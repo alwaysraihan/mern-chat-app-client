@@ -5,11 +5,13 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 
 const Signup = () => {
+  const [loading, setLoading] = useState(false);
   const [passShow, setPassShow] = useState(false);
   const [confirmPassShow, setConfirmPassShow] = useState(false);
   const [name, setName] = useState("");
@@ -17,13 +19,74 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pic, setPic] = useState();
+  const toast = useToast();
+
   const handleShowHide = () => {
     setPassShow(!passShow);
   };
   const handleConfirmShowHide = () => {
     setConfirmPassShow(!confirmPassShow);
   };
-  const postDetails = (pics) => {};
+  const postDetails = async (pics) => {
+    setLoading(true);
+    if (pics === undefined) {
+      toast({
+        title: "Please Select an Image",
+        description:
+          "You need to select a valid image for creating your account.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      return setLoading(false);
+    }
+    if (
+      pics.type === "image/jpeg" ||
+      pics.type === "image/png" ||
+      pics.type === "image/jpg" ||
+      pics.type === "image/gif" ||
+      pics.type === "image/bmp"
+    ) {
+      try {
+        const data = new FormData();
+        data.append("file", pics);
+        data.append("upload_preset", "chat-app");
+        data.append("cloud_name", "nurul");
+        const response = await fetch(
+          "https://api.cloudinary.com/v1_1/nurulislam/image/upload",
+          {
+            method: "POST",
+            body: data,
+          }
+        );
+        const getData = await response.json();
+        console.log(getData.url.toString());
+        setPic(await getData?.url?.toString());
+        return setLoading(false);
+      } catch (error) {
+        console.log(error);
+        toast({
+          title: "Failed to upload! Please try again.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+        return setLoading(false);
+      }
+    } else {
+      toast({
+        title: "Please Select an Image!",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      setLoading(false);
+      return;
+    }
+  };
   const submitSignUpHandler = () => {};
   return (
     <>
@@ -86,6 +149,7 @@ const Signup = () => {
           width="100%"
           style={{ marginTop: 15 }}
           onClick={submitSignUpHandler}
+          isLoading={loading}
         >
           Sign Up
         </Button>
