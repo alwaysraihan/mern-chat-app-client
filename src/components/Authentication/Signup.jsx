@@ -8,7 +8,9 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
+import axios from "axios";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [loading, setLoading] = useState(false);
@@ -20,6 +22,7 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pic, setPic] = useState();
   const toast = useToast();
+  const navigate = useNavigate()
 
   const handleShowHide = () => {
     setPassShow(!passShow);
@@ -59,9 +62,51 @@ const Signup = () => {
             method: "POST",
             body: data,
           }
-        );
-        const getData = await response.json();
-        console.log(getData.url.toString());
+        ).catch((error) => {
+       
+          if (error.response) {
+            toast({
+              title: "Failed to upload! Please try again.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+              position: "bottom",
+            });
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+            return setLoading(false);
+          } else if (error.request) {
+            toast({
+              title: "Failed to upload! Please try again.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+              position: "bottom",
+            });
+            // The request was made but no response was received
+            // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+            // http.ClientRequest in node.js
+            console.log(error.request);
+            return setLoading(false);
+          } else {
+            toast({
+              title: "Failed to upload! Please try again.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+              position: "bottom",
+            });
+            // Something happened in setting up the request that triggered an Error
+            console.log('Error', error.message);
+         setLoading(false);
+          }
+          console.log(error.config);
+  
+        });
+        const getData = await response?.json();
         setPic(await getData?.url?.toString());
         return setLoading(false);
       } catch (error) {
@@ -87,7 +132,64 @@ const Signup = () => {
       return;
     }
   };
-  const submitSignUpHandler = () => {};
+  const submitSignUpHandler = async () => {
+    setLoading(true)
+    if(!name ||!email||!password||!confirmPassword||!pic){
+      toast({
+        title: "Please Fill all the Fields",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      setLoading(false)
+      return
+    }
+    if(password!==confirmPassword){
+      toast({
+        title: "Passwords Did Not Match",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      setLoading(false)
+      return 
+    }
+    else{
+      try {
+        const config= {
+          headers:{
+            "Content-type":"application/json"
+          }
+        }
+        const {data}= await axios.post("http://localhost:5000/api/user",{name,email,password,pic},config)
+        toast({
+          title: "Registration Successful",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+        localStorage.setItem('userInfo',JSON.stringify(data))
+
+        setLoading(false)
+       return navigate('/chat')
+
+      } catch (error) {
+        toast({
+          title: "Error! Failed to Registration.",
+          description:error.response.data.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom",
+        });
+        setLoading(false)
+        return
+      }
+    }
+  };
   return (
     <>
       <VStack spacing="5px" color="black">
